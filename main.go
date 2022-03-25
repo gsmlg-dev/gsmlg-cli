@@ -16,7 +16,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 package main
 
-import "github.com/gsmlg-dev/Foundation/golang/gsmlg-cli/cmd"
+import "github.com/gsmlg-dev/gsmlg-cli/cmd"
 
 func main() {
 	cmd.Execute()
