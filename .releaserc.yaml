@@ -1,5 +1,4 @@
-extends: "semantic-release-monorepo"
-repositoryUrl: https://github.com/gsmlg-dev/Foundation
+repositoryUrl: https://github.com/gsmlg-dev/gsmlg-cli
 plugins:
   - '@semantic-release/commit-analyzer'
   - '@semantic-release/release-notes-generator'
