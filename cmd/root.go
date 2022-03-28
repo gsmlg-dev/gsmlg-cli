@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gsmlg-dev/gsmlg-cli/gsmlg/errorhandler"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -30,6 +31,8 @@ var (
 	getVersion *bool
 )
 
+var exitIfError = errorhandler.CreateExitIfError("GSMLG CLI")
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "gsmlg-cli",
@@ -38,7 +41,7 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		if *getVersion != false {
+		if *getVersion {
 			fmt.Printf("Version: %s\n", version)
 			os.Exit(0)
 		}

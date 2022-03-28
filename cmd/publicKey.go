@@ -63,5 +63,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	publicKeyCmd.Flags().StringP("private-key", "p", "", "Select private key")
-	publicKeyCmd.MarkFlagRequired("private-key")
+	err := publicKeyCmd.MarkFlagRequired("private-key")
+	exitIfError(err)
 }
