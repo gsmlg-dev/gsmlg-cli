@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+Copyright © 2022 Jonathan Gao <gsmlg.com@gmail.com>
 
 */
 package cmd
@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -21,8 +22,14 @@ var zdnsCmd = &cobra.Command{
 	Long: `Command line tool for zdns domain name server. 
   Login to zdns and manage dns resource records.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		user, _ := cmd.Flags().GetString("user")
+
 		fmt.Println("zdns")
-		fmt.Printf("login as %s\n", zdns_username)
+		if user != "" {
+			fmt.Printf("try login as %s\n", user)
+		} else if zdns_username != "" {
+			fmt.Printf("Already login as %s\n", zdns_username)
+		}
 	},
 }
 
@@ -38,4 +45,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// zdnsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	zdnsCmd.Flags().StringP("user", "u", "", "set zdns_user")
+
+	zdns_username = viper.GetString("zdns_user")
 }

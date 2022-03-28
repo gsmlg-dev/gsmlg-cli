@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+Copyright © 2022 Jonathan Gao <gsmlg.com@gmail.com>
 
 */
 package cmd
@@ -16,8 +16,8 @@ var rsaCmd = &cobra.Command{
 	Short: "RSA key pair management",
 	Long: `RSA key pair management:
 
-gsmlg-cli rsa generateKey --length 3072 > privateKey.pem
-gsmlg-cli rsa publicKey --private-key privateKey.pem`,
+gsmlg-cli rsa generate-key --length 3072 > privateKey.pem
+gsmlg-cli rsa public-key --private-key privateKey.pem`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(cmd.Long)
 	},

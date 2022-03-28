@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+Copyright © 2022 Jonathan Gao <gsmlg.com@gmail.com>
 
 */
 package cmd
@@ -16,17 +16,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var rsa_generateKey_pubkey *string
-
 // publicKeyCmd represents the publicKey command
 var publicKeyCmd = &cobra.Command{
-	Use:   "publicKey",
+	Use:   "public-key",
 	Short: "Get public key from private key",
 	Long: `Get public key from private key:
 
 Use --private-key or -p to set private key, "-" indicate stdin.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		key := *rsa_generateKey_pubkey
+		key, _ := cmd.Flags().GetString("private-key")
 		var f *os.File
 		var err error
 		if key == "-" {
@@ -64,6 +62,6 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	rsa_generateKey_pubkey = publicKeyCmd.Flags().StringP("private-key", "p", "", "Select private key")
+	publicKeyCmd.Flags().StringP("private-key", "p", "", "Select private key")
 	publicKeyCmd.MarkFlagRequired("private-key")
 }

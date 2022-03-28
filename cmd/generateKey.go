@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+Copyright © 2022 Jonathan Gao <gsmlg.com@gmail.com>
 
 */
 package cmd
@@ -20,7 +20,7 @@ var rsa_generateKey_raw *bool
 
 // generateKeyCmd represents the generateKey command
 var generateKeyCmd = &cobra.Command{
-	Use:   "generateKey",
+	Use:   "generate-key",
 	Short: "RSA generate private key",
 	Long: `RSA generate private key:
 
