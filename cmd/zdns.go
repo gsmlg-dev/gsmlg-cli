@@ -14,7 +14,6 @@ import (
 	"golang.org/x/term"
 )
 
-
 // zdnsCmd represents the zdns command
 var zdnsCmd = &cobra.Command{
 	Use:   "zdns",
@@ -45,9 +44,6 @@ var zdnsCmd = &cobra.Command{
 			writeConfig()
 		} else if zdns_username != "" {
 			fmt.Printf("Already login as %s\n", zdns_username)
-			token := viper.GetString("zdnsuser.token")
-			zdns.SetToken(token)
-			zdns.GetZone()
 		} else {
 			fmt.Printf("Your haven't login yet. Please use --username [your name] to login.\n")
 		}
