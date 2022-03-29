@@ -53,16 +53,6 @@ var zdnsCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(zdnsCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// zdnsCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// zdnsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	zdnsCmd.Flags().StringP("username", "u", "", "login username")
 	zdnsCmd.Flags().StringP("password", "p", "", "login password")
-
 }
