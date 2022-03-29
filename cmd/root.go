@@ -27,9 +27,8 @@ import (
 )
 
 var (
-	cfgFile    string
-	version    string
-	getVersion *bool
+	cfgFile string
+	Version string
 )
 
 var exitIfError = errorhandler.CreateExitIfError("GSMLG CLI Error")
@@ -42,8 +41,9 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		if *getVersion {
-			fmt.Printf("Version: %s\n", version)
+		v, _ := cmd.Flags().GetBool("version")
+		if v {
+			fmt.Printf("Version: %s\n", Version)
 			os.Exit(0)
 		}
 	},
@@ -69,7 +69,7 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	getVersion = rootCmd.Flags().BoolP("version", "v", false, "Print version")
+	rootCmd.Flags().BoolP("version", "v", false, "Print version")
 }
 
 // initConfig reads in config file and ENV variables if set.
