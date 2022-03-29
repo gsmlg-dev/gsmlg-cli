@@ -21,7 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gsmlg-dev/gsmlg-cli/gsmlg/errorhandler"
+	"github.com/gsmlg-dev/gsmlg-golang/errorhandler"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
