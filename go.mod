@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/go-semantic-release/semantic-release/v2 v2.20.2
-	github.com/gsmlg-dev/gsmlg-golang v0.0.0-00010101000000-000000000000
+	github.com/gsmlg-dev/gsmlg-golang v0.0.0-20220329023129-cd9c59f9824f
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.1
@@ -52,3 +52,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
+replace github.com/gsmlg-dev/gsmlg-golang => ../gsmlg-golang
