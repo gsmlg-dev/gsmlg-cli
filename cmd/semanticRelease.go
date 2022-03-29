@@ -21,7 +21,7 @@ import (
 	"github.com/go-semantic-release/semantic-release/v2/pkg/plugin/manager"
 	"github.com/go-semantic-release/semantic-release/v2/pkg/provider"
 	"github.com/go-semantic-release/semantic-release/v2/pkg/semrel"
-	"github.com/gsmlg-dev/gsmlg-cli/gsmlg/errorhandler"
+	"github.com/gsmlg-dev/gsmlg-golang/errorhandler"
 	"github.com/spf13/cobra"
 )
 

@@ -7,8 +7,8 @@ package cmd
 import (
 	"log"
 
-	"github.com/gsmlg-dev/gsmlg-cli/gsmlg/blog"
-	"github.com/gsmlg-dev/gsmlg-cli/gsmlg/print"
+	"github.com/gsmlg-dev/gsmlg-golang/blog"
+	"github.com/gsmlg-dev/gsmlg-golang/print"
 	"github.com/spf13/cobra"
 )
 

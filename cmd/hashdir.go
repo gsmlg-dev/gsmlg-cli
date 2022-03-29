@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gsmlg-dev/gsmlg-cli/gsmlg/hashdir"
+	"github.com/gsmlg-dev/gsmlg-golang/hashdir"
 	"github.com/spf13/cobra"
 )
 

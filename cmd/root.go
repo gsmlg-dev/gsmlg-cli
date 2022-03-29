@@ -19,8 +19,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
-	"github.com/gsmlg-dev/gsmlg-cli/gsmlg/errorhandler"
+	"github.com/gsmlg-dev/gsmlg-golang/errorhandler"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -31,7 +32,7 @@ var (
 	getVersion *bool
 )
 
-var exitIfError = errorhandler.CreateExitIfError("GSMLG CLI")
+var exitIfError = errorhandler.CreateExitIfError("GSMLG CLI Error")
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -84,13 +85,45 @@ func initConfig() {
 		// Search config in home directory with name ".cli" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".gsmlg/cli")
+		fName := ".gsmlg/cli.yml"
+		viper.SetConfigName(fName)
+		cfgFile = filepath.Join(home, fName)
+		viper.SetConfigFile(cfgFile)
+	}
+
+	if _, err := os.Stat(cfgFile); err != nil {
+		fmt.Printf("Cofnig file %s not exists, please create it.\n", cfgFile)
+		// f, err := os.Create(cfgFile)
+		// cobra.CheckErr(err)
+		// defer f.Close()
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		// fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
+}
+
+func writeConfig() {
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(cfgFile)
+	} else {
+		// Find home directory.
+		home, err := os.UserHomeDir()
+		cobra.CheckErr(err)
+
+		// Search config in home directory with name ".cli" (without extension).
+		viper.AddConfigPath(home)
+		viper.SetConfigType("yaml")
+		fName := ".gsmlg/cli.yml"
+		viper.SetConfigName(fName)
+		cfgFile = filepath.Join(home, fName)
+		viper.SetConfigFile(cfgFile)
+	}
+
+	err := viper.WriteConfig()
+	cobra.CheckErr(err)
 }
