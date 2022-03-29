@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/gsmlg-dev/gsmlg-golang/print"
 	"github.com/gsmlg-dev/gsmlg-golang/zdns"
@@ -45,8 +46,9 @@ var rrCmd = &cobra.Command{
 		} else if isUpdate {
 
 		} else if isDelete {
-			id, _ := cmd.Flags().GetString("id")
-			rrs := zdns.DeleteRr(id)
+			ids, _ := cmd.Flags().GetString("ids")
+			idList := strings.Split(ids, ",")
+			rrs := zdns.DeleteRr(idList...)
 			if ot == "json" {
 				print.Json(rrs)
 			} else {
@@ -79,7 +81,7 @@ func init() {
 	rrCmd.Flags().String("zone", "", "Zone id")
 	// err := rrCmd.MarkFlagRequired("zone")
 	// exitIfError(err)
-	rrCmd.Flags().String("id", "", "Rr id")
+	rrCmd.Flags().String("ids", "", "Rr id, use for delete, sperate by \",\"")
 
 	rrCmd.Flags().String("name", "@", "Rr name")
 	rrCmd.Flags().Int("ttl", 3600, "Rr ttl")
