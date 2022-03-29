@@ -81,9 +81,9 @@ func init() {
 	// exitIfError(err)
 	rrCmd.Flags().String("id", "", "Rr id")
 
-	rrCmd.Flags().String("name", "", "Rr name")
+	rrCmd.Flags().String("name", "@", "Rr name")
 	rrCmd.Flags().Int("ttl", 3600, "Rr ttl")
-	rrCmd.Flags().String("rtype", "", "Rr type")
+	rrCmd.Flags().String("rtype", "a", "Rr type")
 	rrCmd.Flags().String("rdata", "", "Rr data")
 
 }
