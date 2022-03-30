@@ -37,7 +37,8 @@ var rrCmd = &cobra.Command{
 			ttl, _ := cmd.Flags().GetInt("ttl")
 			rtype, _ := cmd.Flags().GetString("rtype")
 			rdata, _ := cmd.Flags().GetString("rdata")
-			rrs := zdns.CreateRrInZone(zone, name, rtype, ttl, rdata)
+			rrs, err := zdns.CreateRrInZone(zone, name, rtype, ttl, rdata)
+			exitIfError(err)
 			if ot == "json" {
 				print.Json(rrs)
 			} else {
@@ -48,7 +49,8 @@ var rrCmd = &cobra.Command{
 		} else if isDelete {
 			ids, _ := cmd.Flags().GetString("ids")
 			idList := strings.Split(ids, ",")
-			rrs := zdns.DeleteRr(idList...)
+			rrs, err := zdns.DeleteRr(idList...)
+			exitIfError(err)
 			if ot == "json" {
 				print.Json(rrs)
 			} else {
@@ -58,7 +60,8 @@ var rrCmd = &cobra.Command{
 			if zone == "" {
 				exitIfError(errors.New("--zone [zone] is required"))
 			}
-			rrs := zdns.GetRrByZone(zone)
+			rrs, err := zdns.GetRrByZone(zone)
+			exitIfError(err)
 
 			if ot == "json" {
 				print.Json(rrs)

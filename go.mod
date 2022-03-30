@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/go-semantic-release/semantic-release/v2 v2.20.2
-	github.com/gsmlg-dev/gsmlg-golang v0.0.0-20220330041051-c2e1526f05d0
+	github.com/gsmlg-dev/gsmlg-golang v0.0.0-20220330080655-5ab32227fd0d
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.10.1
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
