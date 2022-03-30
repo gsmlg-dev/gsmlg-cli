@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/go-semantic-release/semantic-release/v2 v2.20.2
-	github.com/gsmlg-dev/gsmlg-golang v0.0.0-20220329082422-95051b009972
+	github.com/gsmlg-dev/gsmlg-golang v0.0.0-20220330041051-c2e1526f05d0
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.10.1
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
@@ -39,9 +39,9 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
 	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
-	golang.org/x/sys v0.0.0-20220328115105-d36c6a25d886 // indirect
+	golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20220328180837-c47567c462d1 // indirect
+	google.golang.org/genproto v0.0.0-20220329172620-7be39ac1afc7 // indirect
 	google.golang.org/grpc v1.45.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
