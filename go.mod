@@ -5,13 +5,15 @@ go 1.18
 require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/go-semantic-release/semantic-release/v2 v2.20.2
-	github.com/gsmlg-dev/gsmlg-golang v0.0.0-20220330090341-b4b60015944b
+	github.com/gsmlg-dev/gsmlg-golang v1.1.2
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.10.1
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 )
 
 require (
+	github.com/andybalholm/brotli v1.0.4 // indirect
+	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cavaliergopher/grab/v3 v3.0.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
@@ -21,6 +23,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/klauspost/compress v1.15.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
@@ -37,6 +40,9 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
+	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/valyala/fasthttp v1.38.0 // indirect
+	go.uber.org/automaxprocs v1.5.1 // indirect
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
 	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
 	golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f // indirect
