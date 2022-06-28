@@ -19,26 +19,23 @@ import (
 // httpbenchmarkCmd represents the httpbenchmark command
 var httpbenchmarkCmd = &cobra.Command{
 	Use:   "httpbenchmark",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-	and usage of using your command. For example:
+	Short: "httpbenchmark tool",
+	Long: `Run http benchmark easy:
 	
-	Cobra is a CLI library for Go that empowers applications.
-	This application is a tool to generate the needed files
-	to quickly create a Cobra application.`,
+	gsmlg-cli httpbenchmark [flags] [url]`,
 	Run: func(cmd *cobra.Command, args []string) {
 		errAndExit := errorhandler.CreateExitIfError("GSMLG bench: ")
 
 		concurrency, _ := cmd.Flags().GetInt("concurrency")
-		requests, _ := cmd.Flags().GetInt("requests")
+		requests, _ := cmd.Flags().GetInt64("requests")
 		duration, _ := cmd.Flags().GetDuration("duration")
 		interval, _ := cmd.Flags().GetDuration("interval")
 		seconds, _ := cmd.Flags().GetBool("seconds")
 
 		body, _ := cmd.Flags().GetString("body")
-		stream, _ := cmd.Flags().GetString("stream")
+		stream, _ := cmd.Flags().GetBool("stream")
 		method, _ := cmd.Flags().GetString("method")
-		headers, _ := cmd.Flags().GetString("header")
+		headers, _ := cmd.Flags().GetStringSlice("header")
 		host, _ := cmd.Flags().GetString("host")
 		contentType, _ := cmd.Flags().GetString("content")
 		cert, _ := cmd.Flags().GetString("cert")
@@ -87,25 +84,25 @@ var httpbenchmarkCmd = &cobra.Command{
 		}
 
 		clientOpt := req.ClientOpt{
-			url:       url,
-			method:    method,
-			headers:   headers,
-			bodyBytes: bodyBytes,
-			bodyFile:  bodyFile,
+			Url:       url,
+			Method:    method,
+			Headers:   headers,
+			BodyBytes: bodyBytes,
+			BodyFile:  bodyFile,
 
-			certPath: cert,
-			keyPath:  key,
-			insecure: insecure,
+			CertPath: cert,
+			KeyPath:  key,
+			Insecure: insecure,
 
-			maxConns:     concurrency,
-			doTimeout:    timeout,
-			readTimeout:  respReadTimeout,
-			writeTimeout: reqWriteTimeout,
-			dialTimeout:  dialTimeout,
+			MaxConns:     concurrency,
+			DoTimeout:    timeout,
+			ReadTimeout:  respReadTimeout,
+			WriteTimeout: reqWriteTimeout,
+			DialTimeout:  dialTimeout,
 
-			socks5Proxy: socks5,
-			contentType: contentType,
-			host:        host,
+			Socks5Proxy: socks5,
+			ContentType: contentType,
+			Host:        host,
 		}
 
 		requester, err := req.NewRequester(concurrency, requests, duration, &clientOpt)
@@ -117,7 +114,7 @@ var httpbenchmarkCmd = &cobra.Command{
 		outStream := os.Stdout
 		if summary {
 			outStream = os.Stderr
-			isTerminal = false
+			// isTerminal = false
 		}
 		// description
 		var desc string
@@ -160,7 +157,7 @@ func init() {
 	// is called directly, e.g.:
 	// httpbenchmarkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	httpbenchmarkCmd.Flags().Int64P("concurrency", "c", 1, "Number of connections to run concurrently")
+	httpbenchmarkCmd.Flags().IntP("concurrency", "c", 1, "Number of connections to run concurrently")
 	httpbenchmarkCmd.Flags().Int64P("requests", "n", -1, "Number of requests to run")
 	duration, _ := time.ParseDuration("1m")
 	httpbenchmarkCmd.Flags().DurationP("duration", "d", duration, "Duration of test, examples: -d 10s -d 3m")
@@ -171,7 +168,7 @@ func init() {
 	httpbenchmarkCmd.Flags().StringP("body", "b", "", "HTTP request body, if start the body with @, the rest should be a filename to read")
 	httpbenchmarkCmd.Flags().Bool("stream", false, "Specify whether to stream file specified by '--body @file' using chunked encoding or to read into memory")
 	httpbenchmarkCmd.Flags().StringP("method", "m", "GET", "HTTP method")
-	httpbenchmarkCmd.Flags().StringP("header", "H", "", "Custom HTTP headers")
+	httpbenchmarkCmd.Flags().StringSliceP("header", "H", []string{}, "Custom HTTP headers")
 	httpbenchmarkCmd.Flags().String("host", "", "Host header")
 	httpbenchmarkCmd.Flags().StringP("content", "T", "", "Content-Type header")
 	httpbenchmarkCmd.Flags().String("cert", "", "Path to the client's TLS Certificate")
