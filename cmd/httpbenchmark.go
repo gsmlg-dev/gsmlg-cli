@@ -52,6 +52,11 @@ var httpbenchmarkCmd = &cobra.Command{
 		summary, _ := cmd.Flags().GetBool("summary")
 		url := args[0]
 
+		if url == "" {
+			errAndExit("url is required")
+			return
+		}
+
 		if requests >= 0 && requests < int64(concurrency) {
 			errAndExit("requests must greater than or equal concurrency")
 			return
