@@ -161,6 +161,8 @@ github.com/gsmlg-dev/gsmlg-golang v1.1.3 h1:PqsSiW1Sh9pU+ytYSfZf+I2GgKMsaPxNIhQB
 github.com/gsmlg-dev/gsmlg-golang v1.1.3/go.mod h1:jq0X0KDC4Yy0KfoBNDnpLbW50ll6wDCn7lXzyQcMnRQ=
 github.com/gsmlg-dev/gsmlg-golang v1.1.5 h1:qOycwiCLfRhpNvAbI0Kfu5UDWyrB5BCsp8pi84e2f/A=
 github.com/gsmlg-dev/gsmlg-golang v1.1.5/go.mod h1:1liXCkfnvAYF08ScivKG0+VXWc93g3SqV05hJGW1Pdw=
+github.com/gsmlg-dev/gsmlg-golang v1.2.1 h1:ym9OSXXHo3x3YoxtCKmqAW5MSBHEv5eLwPPKkmDu178=
+github.com/gsmlg-dev/gsmlg-golang v1.2.1/go.mod h1:1liXCkfnvAYF08ScivKG0+VXWc93g3SqV05hJGW1Pdw=
 github.com/hashicorp/go-hclog v0.14.1/go.mod h1:whpDNt7SSdeAju8AWKIWsul05p54N/39EeqMAyrmvFQ=
 github.com/hashicorp/go-hclog v1.2.0 h1:La19f8d7WIlm4ogzNHB0JGqs5AUDAZ2UfCY4sJXcJdM=
 github.com/hashicorp/go-hclog v1.2.0/go.mod h1:whpDNt7SSdeAju8AWKIWsul05p54N/39EeqMAyrmvFQ=
