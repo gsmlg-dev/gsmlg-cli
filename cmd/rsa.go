@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 Jonathan Gao <gsmlg.com@gmail.com>
-
 */
 package cmd
 

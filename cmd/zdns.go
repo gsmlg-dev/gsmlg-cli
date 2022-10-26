@@ -37,7 +37,8 @@ var zdnsCmd = &cobra.Command{
 			}
 			hours, _ := cmd.Flags().GetInt("hours")
 			// fmt.Printf("User: %s, Password: %s\n", user, pass)
-			u := zdns.Login(user, pass, hours)
+			u, err := zdns.Login(user, pass, hours)
+			exitIfError(err)
 			fmt.Printf("zdns user: %v\n", u.Username)
 			viper.Set("zdnsuser", u)
 
@@ -55,5 +56,5 @@ func init() {
 
 	zdnsCmd.Flags().StringP("username", "u", "", "login username")
 	zdnsCmd.Flags().StringP("password", "p", "", "login password")
-	zdnsCmd.Flags().Int("hours", 24 * 7, "token valid hours")
+	zdnsCmd.Flags().Int("hours", 24*7, "token valid hours")
 }
