@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 Jonathan Gao <gsmlg.com@gmail.com>
-
 */
 package cmd
 
@@ -56,5 +55,5 @@ func init() {
 
 	zdnsCmd.Flags().StringP("username", "u", "", "login username")
 	zdnsCmd.Flags().StringP("password", "p", "", "login password")
-	zdnsCmd.Flags().Int("hours", 2, "token valid hours")
+	zdnsCmd.Flags().Int("hours", 24 * 7, "token valid hours")
 }

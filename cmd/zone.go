@@ -1,11 +1,11 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"errors"
+	"os"
 
 	"github.com/gsmlg-dev/gsmlg-golang/print"
 	"github.com/gsmlg-dev/gsmlg-golang/zdns"
@@ -33,8 +33,11 @@ Use --create to create with --name zone name, zone name must end with "."
 		isDelete, _ := cmd.Flags().GetBool("delete")
 		if isCreate {
 			zoneName, _ := cmd.Flags().GetString("name")
-			zones := zdns.CreateZone(zoneName)
-			if ot == "json" {
+			zones, err := zdns.CreateZone(zoneName)
+			if err != nil {
+				print.Error(err)
+				os.Exit(1)
+			} else if ot == "json" {
 				print.Json(zones)
 			} else {
 				print.Table(zones, []string{"id", "name", "create_time", "note", "flags"})
@@ -43,17 +46,23 @@ Use --create to create with --name zone name, zone name must end with "."
 
 		} else if isDelete {
 			id, _ := cmd.Flags().GetString("id")
-			zones := zdns.DeleteZone(id)
-			if ot == "json" {
+			zones, err := zdns.DeleteZone(id)
+			if err != nil {
+				print.Error(err)
+				os.Exit(1)
+			} else if ot == "json" {
 				print.Json(zones)
 			} else {
 				print.Table(zones, []string{"id", "name", "create_time", "note", "flags"})
 			}
 		} else {
 
-			zones := zdns.GetZone()
+			zones, err := zdns.GetZone()
 
-			if ot == "json" {
+			if err != nil {
+				print.Error(err)
+				os.Exit(1)
+			} else if ot == "json" {
 				print.Json(zones)
 			} else {
 				print.Table(zones, []string{"id", "name", "create_time", "note", "flags"})

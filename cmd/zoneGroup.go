@@ -1,11 +1,11 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"errors"
+	"os"
 
 	"github.com/gsmlg-dev/gsmlg-golang/print"
 	"github.com/gsmlg-dev/gsmlg-golang/zdns"
@@ -30,9 +30,12 @@ to quickly create a Cobra application.`,
 		}
 		token := viper.GetString("zdnsuser.token")
 		zdns.SetToken(token)
-		zgs := zdns.GetZoneGroup()
+		zgs, err := zdns.GetZoneGroup()
 		ot, _ := cmd.Flags().GetString("output")
-		if ot == "json" {
+		if err != nil {
+			print.Error(err)
+			os.Exit(1)
+		} else if ot == "json" {
 			print.Json(zgs)
 		} else {
 			print.Table(zgs, []string{"id", "name", "create_time"})
