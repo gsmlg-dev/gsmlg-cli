@@ -12,6 +12,7 @@ Available Commands:
   completion       Generate the autocompletion script for the specified shell
   hashdir          Get directory hash
   help             Help about any command
+  httpbenchmark    httpbenchmark tool
   rsa              RSA key pair management
   semantic-release semantic-release - fully automated package/module/image publishing
   zdns             Manage zdns cloud zones and record.
@@ -22,5 +23,4 @@ Flags:
   -v, --version         Print version
 
 Use "gsmlg-cli [command] --help" for more information about a command.
-
 ```
