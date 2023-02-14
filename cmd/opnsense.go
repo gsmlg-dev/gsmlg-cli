@@ -27,17 +27,22 @@ var opnsenseCmd = &cobra.Command{
 
 		if url != "" || token != "" {
 			if url != "" {
-				viper.Set("opnsense.url", url)
+				viper.Set("opnsense.server_url", url)
 			}
 			if token != "" {
 				viper.Set("opnsense.token", token)
 			}
 			writeConfig()
-		} else if opnsense_token != "" || server_url != "" {
-			fmt.Printf("Token is setted as %s\n", opnsense_token)
-			fmt.Printf("Server URL is: %s", server_url)
+		} else if opnsense_token == "" || server_url == "" {
+			if opnsense_token == "" {
+				fmt.Printf("Your don't have token yet. Please use --token [your token] to login.\n")
+			}
+			if server_url == "" {
+				fmt.Printf("Your don't have url yet. Please use --url [server url] set server api url.\n")
+			}
 		} else {
-			fmt.Printf("Your don't have token yet. Please use --token [your token] to login.\n")
+			fmt.Printf("Token is: %s\n", opnsense_token)
+			fmt.Printf("Server URL is: %s\n", server_url)
 		}
 	},
 }

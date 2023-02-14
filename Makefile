@@ -7,3 +7,8 @@ setup-dev:
 setup-ci:
 	@git clone https://github.com/gsmlg-dev/gsmlg-golang.git gsmlg-golang
 	@go mod edit -replace github.com/gsmlg-dev/gsmlg-golang=./gsmlg-golang
+
+build:
+	@go build -o gsmlg-cli main.go
+
+
