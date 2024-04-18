@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/gsmlg-dev/gsmlg-golang/errorhandler"
 	"github.com/spf13/cobra"
@@ -48,6 +49,7 @@ var rootCmd = &cobra.Command{
 			fmt.Printf("Version: %s\n", Version)
 			os.Exit(0)
 		}
+		fmt.Printf("Runtime: %s/%s\n\n", runtime.GOOS, runtime.GOARCH)
 		cmd.Help()
 	},
 }
