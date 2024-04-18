@@ -26,7 +26,12 @@ plugins:
         echo "new_release_minor_version=$minor" >> $GITHUB_OUTPUT
         echo "new_release_patch_version=$patch" >> $GITHUB_OUTPUT
         echo "new_release_channel=${nextRelease.channel}" >> $GITHUB_OUTPUT
-        echo "new_release_notes=${nextRelease.notes}" >> $GITHUB_OUTPUT
+        
+        {
+          echo 'new_release_notes<<EOF'
+          echo "${nextRelease.notes}"
+          echo EOF
+        } >> $GITHUB_OUTPUT
 branches:
   - +([0-9])?(.{+([0-9]),x}).x
   - main
