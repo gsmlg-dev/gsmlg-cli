@@ -16,13 +16,15 @@ plugins:
       "publishCmd": |
         echo pubhlish gsmlg-cli ${nextRelease.version} ${nextRelease.type}
 
-        echo "${nextRelease.notes}"
+        major=$(echo ${nextRelease.version} | cut -d '.' -f 1)
+        minor=$(echo ${nextRelease.version} | cut -d '.' -f 2)
+        patch=$(echo ${nextRelease.version} | cut -d '.' -f 3)
 
         echo "new_release_version=${nextRelease.version}" >> $GITHUB_OUTPUT
         echo "new_release_type=${nextRelease.type}" >> $GITHUB_OUTPUT
-        echo "new_release_major_version=$(echo ${nextRelease.version} | cut -d '.' -f 1)" >> $GITHUB_OUTPUT
-        echo "new_release_minor_version=$(echo ${nextRelease.version} | cut -d '.' -f 2)" >> $GITHUB_OUTPUT
-        echo "new_release_patch_version=$(echo ${nextRelease.version} | cut -d '.' -f 3)" >> $GITHUB_OUTPUT
+        echo "new_release_major_version=$major" >> $GITHUB_OUTPUT
+        echo "new_release_minor_version=$minor" >> $GITHUB_OUTPUT
+        echo "new_release_patch_version=$patch" >> $GITHUB_OUTPUT
         echo "new_release_channel=${nextRelease.channel}" >> $GITHUB_OUTPUT
         echo "new_release_notes=${nextRelease.notes}" >> $GITHUB_OUTPUT
 branches:
