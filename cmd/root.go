@@ -71,7 +71,7 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("version", "v", false, "Print version")
+	rootCmd.Flags().BoolP("version", "", false, "Print version")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -104,7 +104,7 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		// fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
 }
 

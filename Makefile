@@ -1,5 +1,9 @@
-.PHONY: setup-dev setup-ci
+.PHONY: setup-dev setup-ci build
+.EXPORT_ALL_VARIABLES:
 
+CGO_ENABLE := 0
+GOOS := ${GOOS}
+GOARCH := ${GOARCH}
 
 setup-dev:
 	@go mod edit -replace github.com/gsmlg-dev/gsmlg-golang=../gsmlg-golang
@@ -9,6 +13,9 @@ setup-ci:
 	@go mod edit -replace github.com/gsmlg-dev/gsmlg-golang=./gsmlg-golang
 
 build:
-	@go build -o gsmlg-cli main.go
+	@echo GO Build: $$GOOS $$GOARCH $$CGO_ENABLE
+	@go build -trimpath -o gsmlg-cli main.go
 
-
+clean:
+	@rm -rf gsmlg-golang
+	@rm -rf gsmlg-cli
