@@ -8,7 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 
@@ -34,7 +34,7 @@ Use --private-key or -p to set private key, "-" indicate stdin.`,
 				log.Fatal(err)
 			}
 		}
-		c, err := ioutil.ReadAll(f)
+		c, err := io.ReadAll(f)
 		if err != nil {
 			log.Fatal(err)
 		}

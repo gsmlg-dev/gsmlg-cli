@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"time"
@@ -77,7 +76,7 @@ var httpbenchmarkCmd = &cobra.Command{
 			if stream {
 				bodyFile = fileName
 			} else {
-				bodyBytes, err = ioutil.ReadFile(fileName)
+				bodyBytes, err = os.ReadFile(fileName)
 				if err != nil {
 					errAndExit(err.Error())
 					return
