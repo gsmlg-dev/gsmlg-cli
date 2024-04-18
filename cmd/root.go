@@ -30,7 +30,7 @@ const defualtFname = ".config/gsmlg/cli.yaml"
 
 var (
 	cfgFile string
-	Version string
+	Version string = "dev"
 )
 
 var exitIfError = errorhandler.CreateExitIfError("GSMLG CLI Error")
@@ -48,6 +48,7 @@ var rootCmd = &cobra.Command{
 			fmt.Printf("Version: %s\n", Version)
 			os.Exit(0)
 		}
+		cmd.Help()
 	},
 }
 
@@ -103,9 +104,9 @@ func initConfig() {
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		// fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-	}
+	// if err := viper.ReadInConfig(); err == nil {
+	// fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+	// }
 }
 
 func writeConfig() {
