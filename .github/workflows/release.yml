@@ -44,10 +44,10 @@ jobs:
           }
           EOF
       - name: 🏗 Run install semantic-release
-        run: npm install --save-dev semantic-release-monorepo semantic-release @semantic-release/exec
+        run: npm install --save-dev semantic-release @semantic-release/exec
       - name: 🚀 Release
         id: semantic
-        run: npx semantic-release --extends semantic-release-monorepo
+        run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

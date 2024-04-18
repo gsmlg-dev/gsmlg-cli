@@ -5,13 +5,6 @@ plugins:
   - "@semantic-release/github"
   - - "@semantic-release/exec"
     - "prepareCmd": |
-        echo new_release_version=${nextRelease.version} >> $GITHUB_OUTPUT
-        echo new_release_type=${nextRelease.type} >> $GITHUB_OUTPUT
-        echo new_release_major_version=$(echo ${nextRelease.version} | cut -d "." -f 1) >> $GITHUB_OUTPUT
-        echo new_release_minor_version=$(echo ${nextRelease.version} | cut -d "." -f 2) >> $GITHUB_OUTPUT
-        echo new_release_patch_version=$(echo ${nextRelease.version} | cut -d "." -f 3) >> $GITHUB_OUTPUT
-        echo new_release_channel=${nextRelease.channel} >> $GITHUB_OUTPUT
-        echo new_release_notes="${nextRelease.notes}" >> $GITHUB_OUTPUT
         mkdir -p build
         GOOS=linux GOARCH=amd64 go build -ldflags "-w -s -X github.com/gsmlg-dev/gsmlg-cli/cmd.Version=${nextRelease.version}" -o build/gsmlg-cli_linux_amd64 main.go ;
         GOOS=windows GOARCH=amd64 go build -ldflags "-w -s -X github.com/gsmlg-dev/gsmlg-cli/cmd.Version=${nextRelease.version}" -o build/gsmlg-cli_amd64.exe main.go ;
@@ -24,6 +17,14 @@ plugins:
         echo pubhlish gsmlg-cli ${nextRelease.version} ${nextRelease.type}
 
         echo "${nextRelease.notes}"
+
+        echo "new_release_version=${nextRelease.version}" >> $GITHUB_OUTPUT
+        echo "new_release_type=${nextRelease.type}" >> $GITHUB_OUTPUT
+        echo "new_release_major_version=$(echo ${nextRelease.version} | cut -d '.' -f 1)" >> $GITHUB_OUTPUT
+        echo "new_release_minor_version=$(echo ${nextRelease.version} | cut -d '.' -f 2)" >> $GITHUB_OUTPUT
+        echo "new_release_patch_version=$(echo ${nextRelease.version} | cut -d '.' -f 3)" >> $GITHUB_OUTPUT
+        echo "new_release_channel=${nextRelease.channel}" >> $GITHUB_OUTPUT
+        echo "new_release_notes=${nextRelease.notes}" >> $GITHUB_OUTPUT
 branches:
   - +([0-9])?(.{+([0-9]),x}).x
   - main
