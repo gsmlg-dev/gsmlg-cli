@@ -26,6 +26,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const defualtFname = ".config/gsmlg/cli.yaml"
+
 var (
 	cfgFile string
 	Version string
@@ -65,7 +67,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.gsmlg/cli.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/"+defualtFname+")")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -85,7 +87,7 @@ func initConfig() {
 		// Search config in home directory with name ".cli" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
-		fName := ".gsmlg/cli.yml"
+		fName := defualtFname
 		viper.SetConfigName(fName)
 		cfgFile = filepath.Join(home, fName)
 		viper.SetConfigFile(cfgFile)
@@ -102,7 +104,7 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		// fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
 }
 
@@ -118,7 +120,7 @@ func writeConfig() {
 		// Search config in home directory with name ".cli" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
-		fName := ".gsmlg/cli.yml"
+		fName := defualtFname
 		viper.SetConfigName(fName)
 		cfgFile = filepath.Join(home, fName)
 		viper.SetConfigFile(cfgFile)

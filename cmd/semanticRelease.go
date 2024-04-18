@@ -6,7 +6,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -160,29 +159,6 @@ func semanticReleaseCmdHandler(cmd *cobra.Command, args []string) {
 
 	exitIfError(hooksExecutor.Init(hooksConfig))
 
-	if !conf.NoCI {
-		logger.Println("running CI condition...")
-		conditionConfig := map[string]string{
-			"token":         conf.Token,
-			"defaultBranch": repoInfo.DefaultBranch,
-			"private":       fmt.Sprintf("%t", repoInfo.Private),
-		}
-		mergeConfigWithDefaults(conditionConfig, conf.CIConditionOpts)
-
-		err = ci.RunCondition(conditionConfig)
-		if err != nil {
-			herr := hooksExecutor.NoRelease(&hooks.NoReleaseConfig{
-				Reason:  hooks.NoReleaseReason_CONDITION,
-				Message: err.Error(),
-			})
-			if herr != nil {
-				logger.Printf("there was an error executing the hooks plugins: %s", herr.Error())
-			}
-			exitIfError(err, 66)
-		}
-
-	}
-
 	logger.Println("getting latest release...")
 	matchRegex := ""
 	match := strings.TrimSpace(conf.Match)
@@ -245,18 +221,18 @@ func semanticReleaseCmdHandler(cmd *cobra.Command, args []string) {
 	if conf.Changelog != "" {
 		oldFile := make([]byte, 0)
 		if conf.PrependChangelog {
-			oldFileData, err := ioutil.ReadFile(conf.Changelog)
+			oldFileData, err := os.ReadFile(conf.Changelog)
 			if err == nil {
 				oldFile = append([]byte("\n"), oldFileData...)
 			}
 		}
 		changelogData := append([]byte(changelogRes), oldFile...)
-		exitIfError(ioutil.WriteFile(conf.Changelog, changelogData, 0644))
+		exitIfError(os.WriteFile(conf.Changelog, changelogData, 0644))
 	}
 
 	if conf.Dry {
 		if conf.VersionFile {
-			exitIfError(ioutil.WriteFile(".version-unreleased", []byte(newVer), 0644))
+			exitIfError(os.WriteFile(".version-unreleased", []byte(newVer), 0644))
 		}
 		exitIfError(errors.New("DRY RUN: no release was created"), 0)
 	}
@@ -272,11 +248,11 @@ func semanticReleaseCmdHandler(cmd *cobra.Command, args []string) {
 	exitIfError(prov.CreateRelease(newRelease))
 
 	if conf.Ghr {
-		exitIfError(ioutil.WriteFile(".ghr", []byte(fmt.Sprintf("-u %s -r %s v%s", repoInfo.Owner, repoInfo.Repo, newVer)), 0644))
+		exitIfError(os.WriteFile(".ghr", []byte(fmt.Sprintf("-u %s -r %s v%s", repoInfo.Owner, repoInfo.Repo, newVer)), 0644))
 	}
 
 	if conf.VersionFile {
-		exitIfError(ioutil.WriteFile(".version", []byte(newVer), 0644))
+		exitIfError(os.WriteFile(".version", []byte(newVer), 0644))
 	}
 
 	if len(conf.UpdateFiles) == 0 && len(conf.FilesUpdaterPlugins) > 0 {
