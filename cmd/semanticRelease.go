@@ -88,7 +88,7 @@ func semanticReleaseCmdHandler(cmd *cobra.Command, args []string) {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		exitIfError(errors.New("terminating..."))
+		exitIfError(errors.New("terminating"))
 	}()
 
 	if conf.DownloadPlugins {

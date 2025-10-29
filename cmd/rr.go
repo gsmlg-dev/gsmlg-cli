@@ -21,7 +21,7 @@ var rrCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		uname := viper.GetString("zdnsuser.username")
 		if uname == "" {
-			exitIfError(errors.New("Need login first."))
+			exitIfError(errors.New("need login first"))
 		}
 		token := viper.GetString("zdnsuser.token")
 		zdns.SetToken(token)
