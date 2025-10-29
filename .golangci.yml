@@ -1,0 +1,64 @@
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  govet:
+    enable-all: true
+  gocyclo:
+    min-complexity: 15
+  dupl:
+    threshold: 100
+  misspell:
+    locale: US
+  lll:
+    line-length: 140
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  funlen:
+    lines: 100
+    statements: 50
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - goconst
+    - dupl
+    - lll
+    - unconvert
+    - gocyclo
+    - funlen
+    - revive
+    - gosec
+    - exportloopref
+    - whitespace
+  disable:
+    - structcheck
+    - varcheck
+    - deadcode
+    - ifshort
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - funlen
+
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+run:
+  timeout: 5m
+  tests: true

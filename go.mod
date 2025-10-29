@@ -1,8 +1,8 @@
 module github.com/gsmlg-dev/gsmlg-cli
 
-go 1.22
+go 1.25
 
-toolchain go1.22.1
+toolchain go1.25.0
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
