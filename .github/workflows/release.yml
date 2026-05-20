@@ -1,4 +1,9 @@
 name: gsmlg-cli-release
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     paths:
@@ -10,22 +15,20 @@ on:
       - next-major
       - beta
       - alpha
+
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: 🛑 Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.12.1
-        with:
-          access_token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: ⬇️ Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup golang
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: '1.23'
+          go-version: '1.26'
 
       - name: Configure git for private modules
         env:
@@ -33,9 +36,9 @@ jobs:
         run: git config --global url."https://gsmlg:${TOKEN}@github.com".insteadOf "https://github.com"
 
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
       - name: Create package.json
         run: |
           cat <<EOF > package.json
@@ -68,10 +71,6 @@ jobs:
           test -z "${{ steps.semantic.outputs.new_release_version }}" && exit 1 || exit 0
 
       - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/gsmlg-cli_*
-          tag: v${{ steps.semantic.outputs.new_release_version }}
-          file_glob: true
-          overwrite: true
+        run: gh release upload "v${{ steps.semantic.outputs.new_release_version }}" build/gsmlg-cli_* --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
