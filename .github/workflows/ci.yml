@@ -31,10 +31,9 @@ jobs:
         run: git config --global url."https://gsmlg:${TOKEN}@github.com".insteadOf "https://github.com"
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: latest
-          args: --timeout=5m
+          version: v2.12.2
         env:
           GOPRIVATE: github.com/gsmlg-dev/gsmlg-golang
 

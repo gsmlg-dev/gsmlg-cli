@@ -1,62 +1,71 @@
-linters-settings:
-  errcheck:
-    check-type-assertions: false
-    check-blank: false
-  govet:
-    enable-all: false
-  gocyclo:
-    min-complexity: 30
-  dupl:
-    threshold: 150
-  misspell:
-    locale: US
-  lll:
-    line-length: 200
-  goconst:
-    min-len: 3
-    min-occurrences: 5
-  funlen:
-    lines: 150
-    statements: 80
-  gosec:
-    excludes:
-      - G306  # File permissions
-
+version: "2"
+run:
+  tests: true
 linters:
-  enable:
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
-    - gofmt
-    - goimports
   disable:
-    - errcheck
-    - misspell
-    - goconst
     - dupl
-    - lll
-    - unconvert
-    - gocyclo
+    - errcheck
     - funlen
-    - revive
+    - goconst
+    - gocyclo
     - gosec
+    - lll
+    - misspell
+    - revive
+    - unconvert
     - whitespace
-
+  settings:
+    dupl:
+      threshold: 150
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+    funlen:
+      lines: 150
+      statements: 80
+    goconst:
+      min-len: 3
+      min-occurrences: 5
+    gocyclo:
+      min-complexity: 30
+    gosec:
+      excludes:
+        - G306
+    govet:
+      enable-all: false
+    lll:
+      line-length: 200
+    misspell:
+      locale: US
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - dupl
+          - errcheck
+          - funlen
+          - gocyclo
+          - gosec
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - funlen
-
   max-issues-per-linter: 0
   max-same-issues: 0
-
-run:
-  timeout: 5m
-  tests: true
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

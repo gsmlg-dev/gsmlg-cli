@@ -41,4 +41,3 @@ var zoneGroupCmd = &cobra.Command{
 func init() {
 	zdnsCmd.AddCommand(zoneGroupCmd)
 }
-
