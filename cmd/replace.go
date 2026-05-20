@@ -189,7 +189,7 @@ func findFiles(arg string) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid path or pattern: %w", err)
 		}
-		fmt.Printf("Warking in %s with pattern %s\n", rootPath, pattern)
+		fmt.Printf("Walking in %s with pattern %s\n", rootPath, pattern)
 		err = filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -205,7 +205,7 @@ func findFiles(arg string) ([]string, error) {
 	} else {
 		// Treat arg as a directory path
 		rootPath := arg
-		fmt.Printf("Warking in %s\n", rootPath)
+		fmt.Printf("Walking in %s\n", rootPath)
 		err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err

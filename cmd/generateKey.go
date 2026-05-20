@@ -38,7 +38,7 @@ Use --length or -l to set private key length.`,
 			block := &pem.Block{
 				Type: "RSA PRIVATE KEY",
 				Headers: map[string]string{
-					"Generater": "gsmlg-cli",
+					"Generator": "gsmlg-cli",
 				},
 				Bytes: []byte(key),
 			}

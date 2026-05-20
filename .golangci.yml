@@ -42,12 +42,7 @@ linters:
     - funlen
     - revive
     - gosec
-    - exportloopref
     - whitespace
-    - structcheck
-    - varcheck
-    - deadcode
-    - ifshort
 
 issues:
   exclude-rules:
