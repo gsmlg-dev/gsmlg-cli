@@ -3,3 +3,4 @@
 .semrel/
 /gsmlg-golang
 /gsmlg-cli
+dist/

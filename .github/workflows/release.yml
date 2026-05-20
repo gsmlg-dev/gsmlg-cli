@@ -1,31 +1,29 @@
-name: gsmlg-cli-release
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+name: Release
 
 on:
   push:
-    paths:
-      - "**"
-    branches:
-      - +([0-9])?(.{+([0-9]),x}).x
-      - main
-      - next
-      - next-major
-      - beta
-      - alpha
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
 
 jobs:
-  build-and-release:
+  release:
+    name: Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: ⬇️ Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-      - name: Setup golang
+      - name: Force fetch upstream tags
+        run: git fetch --tags --force
+
+      - name: Setup Go
         uses: actions/setup-go@v6
         with:
           go-version: '1.26'
@@ -35,42 +33,17 @@ jobs:
           TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: git config --global url."https://gsmlg:${TOKEN}@github.com".insteadOf "https://github.com"
 
-      - name: Setup node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-      - name: Create package.json
+      - name: Print Go version and environment
         run: |
-          cat <<EOF > package.json
-          {
-            "name": "gsmlg-cli"
-          }
-          EOF
-      - name: 🏗 Run install semantic-release
-        run: npm install --save-dev semantic-release @semantic-release/exec
-      - name: 🚀 Release
-        id: semantic
-        run: npx semantic-release
+          printf "Using go at: $(which go)\n"
+          printf "Go version: $(go version)\n"
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GOPRIVATE: github.com/gsmlg-dev/gsmlg-golang
-
-      - name: Stop if NO NEW release
-        run: |
-          cat <<EOF
-          Published: ${{ steps.semantic.outputs.new_release_published }}
-          New Release Version: ${{ steps.semantic.outputs.new_release_version }}
-          New Release Major Version: ${{ steps.semantic.outputs.new_release_major_version }}
-          New Release Minor Version: ${{ steps.semantic.outputs.new_release_minor_version }}
-          New Release Patch Version: ${{ steps.semantic.outputs.new_release_patch_version }}
-          New Release Channel: ${{ steps.semantic.outputs.new_release_channel }}
-          New Release Notes: 
-          ${{ steps.semantic.outputs.new_release_notes }}
-          EOF
-          test -z "${{ steps.semantic.outputs.new_release_version }}" && exit 1 || exit 0
-
-      - name: Upload binaries to release
-        run: gh release upload "v${{ steps.semantic.outputs.new_release_version }}" build/gsmlg-cli_* --clobber
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

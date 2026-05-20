@@ -1,0 +1,52 @@
+version: 2
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    binary: gsmlg-cli
+    goos:
+      - darwin
+      - linux
+      - windows
+      - freebsd
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/gsmlg-dev/gsmlg-cli/cmd.Version={{ .Version }}
+
+archives:
+  - format_overrides:
+      - goos: windows
+        formats: zip
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- if eq .Os "darwin" }}mac{{ else }}{{ .Os }}{{ end }}_
+      {{- .Arch }}
+
+checksum:
+  algorithm: sha256
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^chore:'
+      - '^ci:'
+      - '^docs?:'
+      - '^tests?:'
+      - '^style:'
+
+release:
+  github:
+    owner: gsmlg-dev
+    name: gsmlg-cli
+  draft: false
+  prerelease: auto
