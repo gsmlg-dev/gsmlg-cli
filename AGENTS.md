@@ -11,7 +11,8 @@ This document describes the logical agents, background processes, concurrent sys
 | **Terminal Printer** | `github.com/gsmlg-dev/gsmlg-golang/req.Printer` | Temporary | Renders real-time metrics progress bar and terminal tables. |
 | **Semantic Release Orchestrator** | `github.com/gsmlg-dev/gsmlg-cli/cmd` (`semanticReleaseCmdHandler`) | Temporary | Coordinates the release pipeline; acts as supervisor to external plugins. |
 | **Plugin Subprocess** (Generic) | `github.com/hashicorp/go-plugin.Client` | Transient | Supervised external processes performing specialized release tasks (e.g., git provider, changelog). |
-| **ZDNS Command Client** | `github.com/gsmlg-dev/gsmlg-cli/cmd` (`zdnsCmd`, `zoneCmd`, `rrCmd`) | Temporary | Interacts with ZDNS cloud services using active configurations and tokens. |
+| **Route53 Command Client** | `github.com/gsmlg-dev/gsmlg-cli/cmd` (`route53Cmd`) | Temporary | Interacts with AWS Route53 cloud services using configured credentials. |
+| **Cloudflare Command Client** | `github.com/gsmlg-dev/gsmlg-cli/cmd` (`cloudflareCmd`) | Temporary | Interacts with Cloudflare APIs using configured credentials. |
 | **OPNsense Command Client** | `github.com/gsmlg-dev/gsmlg-cli/cmd` (`opnsenseCmd`) | Temporary | Interacts with OPNsense router management APIs. |
 
 ## 2. State & Transformations
@@ -37,12 +38,19 @@ In accordance with functional programming paradigms, agents are modeled as state
   - `semrel.GetNewVersion`: Pure functional state transition mapping input commits and the current release state to the next semantic version string.
   - `updater.Apply`: Transforms targeted files on disk to reflect the updated release version.
 
-### ZDNS API Client
+### AWS Route53 Client
 - **State Structure**:
-  - The session state (`zdnsuser.username` and `zdnsuser.token`) is persisted in the local configuration file `$HOME/.config/gsmlg/cli.yaml` and loaded into the Viper runtime memory.
+  - Configured AWS credentials (`aws.access_key_id`, `aws.secret_access_key`, and `aws.region`) are persisted in `$HOME/.config/gsmlg/cli.yaml` and loaded into the Viper runtime memory.
 - **Transformations**:
-  - `zdns.Login`: Exchanges username/password credentials for a session token, transitioning the local configuration state.
-  - `zdns.SetToken`: Configures the active REST API client session.
+  - `viper.Set`: Transitions local config when updated via `route53 config`.
+  - `route53.NewFromConfig`: Instantiates a stateful Route53 client using configured credentials or environment variables.
+
+### Cloudflare Client
+- **State Structure**:
+  - Cloudflare credentials (`cloudflare.token` or `cloudflare.email` and `cloudflare.key`) are stored in `$HOME/.config/gsmlg/cli.yaml` and loaded into Viper memory.
+- **Transformations**:
+  - `viper.Set`: Transitions local config when updated via `cloudflare config`.
+  - `cloudflare.NewWithAPIToken` / `cloudflare.New`: Instantiates a stateful Cloudflare API client session.
 
 ## 3. Orchestration & Topology
 
@@ -110,7 +118,8 @@ Logical entities in `gsmlg-cli` have access to the following APIs, system capabi
 
 | Entity | Allowed Functions / Resources | Security Context / Credentials |
 | :--- | :--- | :--- |
-| **ZDNS Client** | `zdns.Login`, `zdns.GetZone`, `zdns.CreateZone`, `zdns.DeleteZone`, `zdns.GetRrByZone`, `zdns.CreateRrInZone`, `zdns.DeleteRr` | Uses token stored under `zdnsuser.token` in `cli.yaml`. |
+| **Route53 Client** | `ListHostedZones`, `CreateHostedZone`, `DeleteHostedZone`, `ListResourceRecordSets`, `ChangeResourceRecordSets` | Uses AWS credentials stored under `aws.*` in `cli.yaml` or read from environment. |
+| **Cloudflare Client** | `ListZones`, `CreateZone`, `DeleteZone`, `ListDNSRecords`, `CreateDNSRecord`, `DeleteDNSRecord` | Uses credentials stored under `cloudflare.*` in `cli.yaml` or read from environment. |
 | **OPNsense Client** | Reconfigures and queries external OPNsense routers. | Reads API credentials and base URL from `opnsense.token` and `opnsense.server_url` in `cli.yaml`. |
 | **Blog Client** | `blog.Fetch`, `blog.FetchOne` | Fetches public blog feeds from `gsmlg.com` without authentication. |
 | **HTTP Benchmark** | `req.NewRequester`, `req.NewStreamReport`, `req.NewPrinter` | Bounded resource usage via flags (`--concurrency`, `--timeout`, `--dial-timeout`). |

@@ -17,8 +17,9 @@ Available Commands:
   httpbenchmark    httpbenchmark tool
   opnsense         Manage opnsense, start/stop/reconfigure services.
   rsa              RSA key pair management
+  cloudflare       Manage Cloudflare zones and DNS records.
+  route53          Manage AWS Route53 hosted zones and records.
   semantic-release semantic-release - fully automated package/module/image publishing
-  zdns             Manage zdns cloud zones and record.
 
 Flags:
       --config string   config file (default is $HOME/.config/gsmlg/cli.yaml)
