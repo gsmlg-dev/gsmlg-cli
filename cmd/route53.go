@@ -78,7 +78,7 @@ type Route53Zone struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	RecordCount int64  `json:"record_count"`
-	PrivateZone bool   `json:"private_zone"`
+	PrivateZone string `json:"private_zone"`
 	Comment     string `json:"comment"`
 }
 
@@ -110,7 +110,7 @@ var route53ZoneListCmd = &cobra.Command{
 				ID:          id,
 				Name:        aws.ToString(hz.Name),
 				RecordCount: recordCount,
-				PrivateZone: hz.Config != nil && hz.Config.PrivateZone,
+				PrivateZone: fmt.Sprintf("%t", hz.Config != nil && hz.Config.PrivateZone),
 				Comment:     comment,
 			})
 		}

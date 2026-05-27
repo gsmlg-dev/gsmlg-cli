@@ -85,7 +85,7 @@ type CloudflareZone struct {
 	Name   string `json:"name"`
 	Status string `json:"status"`
 	Type   string `json:"type"`
-	Paused bool   `json:"paused"`
+	Paused string `json:"paused"`
 }
 
 var cloudflareZoneListCmd = &cobra.Command{
@@ -105,7 +105,7 @@ var cloudflareZoneListCmd = &cobra.Command{
 				Name:   zone.Name,
 				Status: zone.Status,
 				Type:   zone.Type,
-				Paused: zone.Paused,
+				Paused: fmt.Sprintf("%t", zone.Paused),
 			})
 		}
 
@@ -176,7 +176,7 @@ type CloudflareRecord struct {
 	Type    string `json:"type"`
 	Content string `json:"content"`
 	TTL     int    `json:"ttl"`
-	Proxied bool   `json:"proxied"`
+	Proxied string `json:"proxied"`
 }
 
 var cloudflareRecordListCmd = &cobra.Command{
@@ -196,13 +196,17 @@ var cloudflareRecordListCmd = &cobra.Command{
 
 		cfRecords := make([]CloudflareRecord, 0)
 		for _, rec := range records {
+			proxiedStr := "false"
+			if rec.Proxied != nil {
+				proxiedStr = fmt.Sprintf("%t", *rec.Proxied)
+			}
 			cfRecords = append(cfRecords, CloudflareRecord{
 				ID:      rec.ID,
 				Name:    rec.Name,
 				Type:    rec.Type,
 				Content: rec.Content,
 				TTL:     rec.TTL,
-				Proxied: *rec.Proxied,
+				Proxied: proxiedStr,
 			})
 		}
 
