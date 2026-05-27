@@ -17,8 +17,7 @@ Available Commands:
   httpbenchmark    httpbenchmark tool
   opnsense         Manage opnsense, start/stop/reconfigure services.
   rsa              RSA key pair management
-  cloudflare       Manage Cloudflare zones and DNS records.
-  route53          Manage AWS Route53 hosted zones and records.
+  dns              Unified DNS provider management (Cloudflare, AWS Route53).
   semantic-release semantic-release - fully automated package/module/image publishing
 
 Flags:
