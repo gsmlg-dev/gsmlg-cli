@@ -22,7 +22,7 @@ import (
 const (
 	githubRepo       = "gsmlg-dev/gsmlg-cli"
 	githubAPIBaseURL = "https://api.github.com/repos/" + githubRepo
-	defaultInstallPath = "~/.local/bin/gsmlg"
+	defaultInstallPath = "~/.local/bin/gsmlg-cli"
 )
 
 type githubRelease struct {
@@ -42,13 +42,13 @@ var installCmd = &cobra.Command{
 	Short: "Download and install the latest version of gsmlg-cli",
 	Long: `Download the latest release of gsmlg-cli from GitHub and install it.
 
-By default, the binary is installed to ~/.local/bin/gsmlg.
+By default, the binary is installed to ~/.local/bin/gsmlg-cli.
 Use --path to specify a custom install location.
 
 Examples:
   gsmlg-cli install
-  gsmlg-cli install --path /usr/local/bin/gsmlg
-  gsmlg-cli install --path ~/bin/gsmlg`,
+  gsmlg-cli install --path /usr/local/bin/gsmlg-cli
+  gsmlg-cli install --path ~/bin/gsmlg-cli`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runInstall(cmd)
 	},
