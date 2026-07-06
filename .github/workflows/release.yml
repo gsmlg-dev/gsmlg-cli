@@ -1,23 +1,37 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 1.2.3)"
+        required: true
+        type: string
+      git_ref:
+        description: "Git ref to release from"
+        required: true
+        default: "main"
+        type: string
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOPRIVATE: github.com/gsmlg-dev/gsmlg-golang
 
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.git_ref }}
           fetch-depth: 0
 
       - name: Force fetch upstream tags
@@ -26,24 +40,54 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version-file: go.mod
+          cache: true
 
       - name: Configure git for private modules
         env:
           TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: git config --global url."https://gsmlg:${TOKEN}@github.com".insteadOf "https://github.com"
 
-      - name: Print Go version and environment
+      - name: Configure release git identity
         run: |
-          printf "Using go at: $(which go)\n"
-          printf "Go version: $(go version)\n"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Validate release version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "version must look like 1.2.3 or 1.2.3-rc.1"
+            exit 1
+          fi
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "tag v${VERSION} already exists"
+            exit 1
+          fi
+
+      - name: Build release binary
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          go build \
+            -trimpath \
+            -ldflags "-w -s -X github.com/gsmlg-dev/gsmlg-cli/cmd.Version=${VERSION}" \
+            -o "$RUNNER_TEMP/gsmlg-cli" \
+            main.go
+
+      - name: Create and push release tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
-          version: '~> v2'
+          version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOPRIVATE: github.com/gsmlg-dev/gsmlg-golang

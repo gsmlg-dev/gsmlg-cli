@@ -1,0 +1,64 @@
+name: E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version to test"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-smoke:
+    name: Release Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Download release artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          mkdir -p dist
+          gh release download "v${VERSION}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "gsmlg-cli_${VERSION}_linux_amd64.tar.gz" \
+            --dir dist
+          gh release download "v${VERSION}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "checksums.txt" \
+            --dir dist
+
+      - name: Verify artifact checksum
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          cd dist
+          sha256sum --check --ignore-missing checksums.txt
+          test -f "gsmlg-cli_${VERSION}_linux_amd64.tar.gz"
+
+      - name: Extract release binary
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          mkdir -p e2e-bin
+          tar -xzf "dist/gsmlg-cli_${VERSION}_linux_amd64.tar.gz" -C e2e-bin
+          chmod +x e2e-bin/gsmlg-cli
+
+      - name: Run release smoke tests
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          version_output="$(./e2e-bin/gsmlg-cli -v)"
+          echo "$version_output"
+          grep -q "Version: ${VERSION}" <<<"$version_output"
+          ./e2e-bin/gsmlg-cli bin-install --help
