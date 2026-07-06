@@ -27,6 +27,7 @@ const (
 
 type githubRelease struct {
 	TagName string        `json:"tag_name"`
+	Draft   bool          `json:"draft"`
 	Assets  []githubAsset `json:"assets"`
 }
 
