@@ -88,7 +88,7 @@ jobs:
 
       - name: Run release smoke tests
         run: |
-          version_output="$(./e2e-bin/gsmlg-cli -v)"
+          version_output="$(./e2e-bin/gsmlg-cli --version)"
           echo "$version_output"
           grep -q "Version:" <<<"$version_output"
           ./e2e-bin/gsmlg-cli bin-install --help

@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	githubRepo       = "gsmlg-dev/gsmlg-cli"
-	githubAPIBaseURL = "https://api.github.com/repos/" + githubRepo
+	githubRepo         = "gsmlg-dev/gsmlg-cli"
+	githubAPIBaseURL   = "https://api.github.com/repos/" + githubRepo
 	defaultInstallPath = "~/.local/bin/gsmlg-cli"
 )
 

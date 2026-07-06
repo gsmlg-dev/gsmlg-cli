@@ -3,6 +3,8 @@ Copyright © 2026 Jonathan Gao <gsmlg.com@gmail.com>
 */
 package cmd
 
+//lint:file-ignore SA1019 Keep the AWS SDK v2 global endpoint resolver until the S3-compatible provider behavior is migrated.
+
 import (
 	"context"
 	"errors"
@@ -98,14 +100,14 @@ func newS3Client(ac AliasConfig) (*s3.Client, error) {
 
 	isAWSEndpoint := ac.Endpoint != "" && strings.Contains(ac.Endpoint, ".amazonaws.com")
 	if ac.Endpoint != "" && !isAWSEndpoint {
-		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) { //nolint:staticcheck // Keep existing S3-compatible endpoint behavior until resolver migration.
 			if service == s3.ServiceID {
-				return aws.Endpoint{
+				return aws.Endpoint{ //nolint:staticcheck // Keep existing S3-compatible endpoint behavior until resolver migration.
 					URL:           ac.Endpoint,
 					SigningRegion: region,
 				}, nil
 			}
-			return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+			return aws.Endpoint{}, &aws.EndpointNotFoundError{} //nolint:staticcheck // Keep existing S3-compatible endpoint behavior until resolver migration.
 		})
 		optFns = append(optFns, config.WithEndpointResolverWithOptions(resolver))
 	}
@@ -557,6 +559,7 @@ var s3ShareCmd = &cobra.Command{
 }
 
 type PathType int
+
 const (
 	PathLocal PathType = iota
 	PathS3
@@ -1324,4 +1327,3 @@ func printTree(keys []string, rootPrefix, indent string, maxdepth, depth int) {
 		}
 	}
 }
-
