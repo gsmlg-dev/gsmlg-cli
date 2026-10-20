@@ -119,6 +119,12 @@ func runSvcInstall(appName string) error {
 		return fmt.Errorf("failed to install release: %w", err)
 	}
 
+	if app.Name == "secrethub_agent" {
+		if err := ensureSecretHubAgentConfig(installDir); err != nil {
+			return fmt.Errorf("failed to generate secrethub_agent config: %w", err)
+		}
+	}
+
 	fmt.Println("Registering user service...")
 	if err := registerSvcInstallService(app, installDir, runtime.GOOS); err != nil {
 		return err
@@ -566,6 +572,44 @@ func copySvcInstallFile(src, dst string, mode os.FileMode) error {
 	return out.Close()
 }
 
+func ensureSecretHubAgentConfig(installDir string) error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	configPath := filepath.Join(home, ".config", "secrethub_agent", "config.toml")
+	if _, err := os.Lstat(configPath); err == nil {
+		return nil
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o700); err != nil {
+		return err
+	}
+	config, err := os.OpenFile(configPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if os.IsExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	command := exec.Command(filepath.Join(installDir, "bin", "secrethub_agent"), "config", "generate")
+	command.Stdout = config
+	command.Stderr = os.Stderr
+	runErr := command.Run()
+	closeErr := config.Close()
+	if runErr != nil || closeErr != nil {
+		os.Remove(configPath)
+		if runErr != nil {
+			return runErr
+		}
+		return closeErr
+	}
+	fmt.Printf("Generated secrethub_agent config: %s\n", configPath)
+	return nil
+}
+
 func registerSvcInstallService(app svcInstallApp, installDir, goos string) error {
 	switch goos {
 	case "linux":
@@ -609,6 +653,11 @@ func writeSystemdUserService(app svcInstallApp, installDir string) (string, erro
 	}
 
 	unitPath := filepath.Join(unitDir, app.SystemdUnit)
+	var environment string
+	if app.Name == "secrethub_agent" {
+		configPath := filepath.Join(home, ".config", "secrethub_agent", "config.toml")
+		environment = fmt.Sprintf("Environment=\"SECRET_HUB_AGENT_CONFIG_FILE=%s\"\n", strings.NewReplacer("\\", "\\\\", "\"", "\\\"", "%", "%%").Replace(configPath))
+	}
 	content := fmt.Sprintf(`[Unit]
 Description=%s
 After=network-online.target
@@ -616,14 +665,14 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=%s
+%sWorkingDirectory=%s
 ExecStart=%s start
 Restart=always
 RestartSec=5
 
 [Install]
 WantedBy=default.target
-`, app.ServiceTitle, installDir, filepath.Join(installDir, "bin", app.AppName))
+`, app.ServiceTitle, environment, installDir, filepath.Join(installDir, "bin", app.AppName))
 
 	if err := os.WriteFile(unitPath, []byte(content), 0o644); err != nil {
 		return "", err
@@ -669,6 +718,16 @@ func writeLaunchdAgent(app svcInstallApp, installDir string) (string, error) {
 	binaryPath := filepath.Join(installDir, "bin", app.AppName)
 	stdoutPath := filepath.Join(installDir, app.AppName+".out.log")
 	stderrPath := filepath.Join(installDir, app.AppName+".err.log")
+	var environment string
+	if app.Name == "secrethub_agent" {
+		configPath := filepath.Join(home, ".config", "secrethub_agent", "config.toml")
+		environment = fmt.Sprintf(`  <key>EnvironmentVariables</key>
+  <dict>
+    <key>SECRET_HUB_AGENT_CONFIG_FILE</key>
+    <string>%s</string>
+  </dict>
+`, xmlText(configPath))
+	}
 	content := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -680,7 +739,7 @@ func writeLaunchdAgent(app svcInstallApp, installDir string) (string, error) {
     <string>%s</string>
     <string>start</string>
   </array>
-  <key>RunAtLoad</key>
+%s  <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
   <true/>
@@ -692,7 +751,7 @@ func writeLaunchdAgent(app svcInstallApp, installDir string) (string, error) {
   <string>%s</string>
 </dict>
 </plist>
-`, xmlText(app.LaunchdLabel), xmlText(binaryPath), xmlText(installDir), xmlText(stdoutPath), xmlText(stderrPath))
+`, xmlText(app.LaunchdLabel), xmlText(binaryPath), environment, xmlText(installDir), xmlText(stdoutPath), xmlText(stderrPath))
 
 	if err := os.WriteFile(plistPath, []byte(content), 0o644); err != nil {
 		return "", err

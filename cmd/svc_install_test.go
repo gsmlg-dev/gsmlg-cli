@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/xml"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -213,6 +214,114 @@ func TestFindSvcInstallReleaseRoot(t *testing.T) {
 	})
 }
 
+func TestEnsureSecretHubAgentConfigGeneratesConfig(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	installDir := filepath.Join(home, ".local", "share", "secrethub_agent")
+	writeSecretHubAgentScript(t, installDir, `#!/bin/sh
+if [ "$#" -ne 2 ] || [ "$1" != config ] || [ "$2" != generate ]; then
+  exit 64
+fi
+printf '[agent]\nname = "installed"\n'
+`)
+
+	if err := ensureSecretHubAgentConfig(installDir); err != nil {
+		t.Fatalf("ensureSecretHubAgentConfig returned error: %v", err)
+	}
+	configPath := filepath.Join(home, ".config", "secrethub_agent", "config.toml")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	if want := "[agent]\nname = \"installed\"\n"; string(data) != want {
+		t.Fatalf("config = %q, want %q", data, want)
+	}
+	info, err := os.Stat(configPath)
+	if err != nil {
+		t.Fatalf("Stat returned error: %v", err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("config permissions = %o, want 600", info.Mode().Perm())
+	}
+}
+
+func TestEnsureSecretHubAgentConfigPreservesExistingConfig(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	installDir := filepath.Join(home, ".local", "share", "secrethub_agent")
+	writeSecretHubAgentScript(t, installDir, "#!/bin/sh\ntouch \"$HOME/generator-called\"\nexit 1\n")
+	configPath := filepath.Join(home, ".config", "secrethub_agent", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	want := "[agent]\nname = \"existing\"\n"
+	if err := os.WriteFile(configPath, []byte(want), 0o640); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ensureSecretHubAgentConfig(installDir); err != nil {
+		t.Fatalf("ensureSecretHubAgentConfig returned error: %v", err)
+	}
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != want {
+		t.Fatalf("config = %q, want %q", data, want)
+	}
+	if _, err := os.Stat(filepath.Join(home, "generator-called")); !os.IsNotExist(err) {
+		t.Fatalf("generator marker Stat error = %v, want file not to exist", err)
+	}
+	info, err := os.Stat(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o640 {
+		t.Fatalf("existing config permissions = %o, want 640", info.Mode().Perm())
+	}
+}
+
+func TestEnsureSecretHubAgentConfigCanRetryAfterGenerationFailure(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	installDir := filepath.Join(home, ".local", "share", "secrethub_agent")
+	writeSecretHubAgentScript(t, installDir, `#!/bin/sh
+if [ ! -e "$HOME/generator-retry" ]; then
+  touch "$HOME/generator-retry"
+  printf 'incomplete config'
+  exit 1
+fi
+printf '[agent]\nname = "retried"\n'
+`)
+
+	if err := ensureSecretHubAgentConfig(installDir); err == nil {
+		t.Fatal("ensureSecretHubAgentConfig returned nil error for failed generation")
+	}
+	configPath := filepath.Join(home, ".config", "secrethub_agent", "config.toml")
+	if _, err := os.Stat(configPath); !os.IsNotExist(err) {
+		t.Fatalf("failed config Stat error = %v, want file not to exist", err)
+	}
+	if err := ensureSecretHubAgentConfig(installDir); err != nil {
+		t.Fatalf("retry returned error: %v", err)
+	}
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "[agent]\nname = \"retried\"\n"; string(data) != want {
+		t.Fatalf("retried config = %q, want %q", data, want)
+	}
+}
+
+func writeSecretHubAgentScript(t *testing.T, installDir, script string) {
+	t.Helper()
+	path := filepath.Join(installDir, "bin", "secrethub_agent")
+	createExecutable(t, path)
+	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
+		t.Fatalf("WriteFile returned error: %v", err)
+	}
+}
+
 func TestWriteSystemdUserService(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -247,6 +356,32 @@ func TestWriteSystemdUserService(t *testing.T) {
 	} {
 		if !strings.Contains(content, want) {
 			t.Fatalf("systemd service missing %q in:\n%s", want, content)
+		}
+	}
+}
+
+func TestWriteSystemdUserServiceSecretHubAgentConfig(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	app, ok := resolveSvcInstallApp("secrethub_agent")
+	if !ok {
+		t.Fatal("resolveSvcInstallApp returned !ok for secrethub_agent")
+	}
+	installDir := filepath.Join(home, ".local", "share", "secrethub_agent")
+	servicePath, err := writeSystemdUserService(app, installDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(servicePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"Environment=\"SECRET_HUB_AGENT_CONFIG_FILE=" + filepath.Join(home, ".config", "secrethub_agent", "config.toml") + "\"\n",
+		"ExecStart=" + filepath.Join(installDir, "bin", "secrethub_agent") + " start\n",
+	} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("systemd service missing %q in:\n%s", want, data)
 		}
 	}
 }
@@ -318,6 +453,67 @@ func TestWriteLaunchdAgent(t *testing.T) {
 		if !strings.Contains(content, want) {
 			t.Fatalf("launchd plist missing %q in:\n%s", want, content)
 		}
+	}
+}
+
+func TestWriteLaunchdAgentSecretHubAgentConfig(t *testing.T) {
+	home := filepath.Join(t.TempDir(), "home & agent")
+	t.Setenv("HOME", home)
+	app, ok := resolveSvcInstallApp("secrethub_agent")
+	if !ok {
+		t.Fatal("resolveSvcInstallApp returned !ok for secrethub_agent")
+	}
+	installDir := filepath.Join(home, ".local", "share", "secrethub_agent")
+	plistPath, err := writeLaunchdAgent(app, installDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := filepath.Join(home, "Library", "LaunchAgents", "com.gsmlg.secrethub_agent.plist"); plistPath != want {
+		t.Fatalf("plistPath = %q, want %q", plistPath, want)
+	}
+	data, err := os.ReadFile(plistPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	type node struct {
+		XMLName  xml.Name
+		Text     string `xml:",chardata"`
+		Children []node `xml:",any"`
+	}
+	var plist node
+	if err := xml.Unmarshal(data, &plist); err != nil {
+		t.Fatalf("invalid plist XML: %v", err)
+	}
+	if plist.XMLName.Local != "plist" || len(plist.Children) != 1 || plist.Children[0].XMLName.Local != "dict" {
+		t.Fatalf("unexpected plist root: %#v", plist)
+	}
+	value := func(dict node, key string) node {
+		t.Helper()
+		for i := 0; i+1 < len(dict.Children); i += 2 {
+			if dict.Children[i].XMLName.Local == "key" && dict.Children[i].Text == key {
+				return dict.Children[i+1]
+			}
+		}
+		t.Fatalf("plist dictionary missing key %q", key)
+		return node{}
+	}
+	dict := plist.Children[0]
+	environment := value(dict, "EnvironmentVariables")
+	if environment.XMLName.Local != "dict" {
+		t.Fatalf("EnvironmentVariables type = %q, want dict", environment.XMLName.Local)
+	}
+	config := value(environment, "SECRET_HUB_AGENT_CONFIG_FILE")
+	if want := filepath.Join(home, ".config", "secrethub_agent", "config.toml"); config.XMLName.Local != "string" || config.Text != want {
+		t.Fatalf("config environment = %#v, want string %q", config, want)
+	}
+	arguments := value(dict, "ProgramArguments")
+	wantArgs := []string{filepath.Join(installDir, "bin", "secrethub_agent"), "start"}
+	var gotArgs []string
+	for _, argument := range arguments.Children {
+		gotArgs = append(gotArgs, argument.Text)
+	}
+	if arguments.XMLName.Local != "array" || !reflect.DeepEqual(gotArgs, wantArgs) {
+		t.Fatalf("ProgramArguments = %#v, want %#v", gotArgs, wantArgs)
 	}
 }
 
