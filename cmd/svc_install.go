@@ -359,7 +359,7 @@ func extractSvcInstallTarGz(archivePath, extractDir string) error {
 			if err := os.MkdirAll(targetPath, mode.Perm()); err != nil {
 				return err
 			}
-		case tar.TypeReg, tar.TypeRegA:
+		case tar.TypeReg:
 			if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
 				return err
 			}
