@@ -9,6 +9,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -45,8 +46,10 @@ Supported applications:
   host_agent       installs gsmlg-opt/backplane host_agent to ~/.local/share/host_agent
   secrethub_agent  installs gsmlg-dev/secrethub secrethub_agent to ~/.local/share/secrethub_agent
 
-On Linux, svc-install writes a systemd user unit and restarts it with systemctl --user.
-On macOS, svc-install writes a LaunchAgent plist and loads it with launchctl.
+On Linux, svc-install stops the systemd user service before installing, then writes
+the unit and starts it with systemctl --user.
+On macOS, svc-install unloads the LaunchAgent before installing, then writes the
+plist and loads it with launchctl.
 
 Examples:
   gsmlg-cli svc-install commander
@@ -111,6 +114,11 @@ func runSvcInstall(appName string) error {
 
 	releaseRoot, err := findSvcInstallReleaseRoot(extractDir, app.AppName)
 	if err != nil {
+		return err
+	}
+
+	fmt.Println("Stopping user service...")
+	if err := stopSvcInstallService(app, runtime.GOOS); err != nil {
 		return err
 	}
 
@@ -610,6 +618,32 @@ func ensureSecretHubAgentConfig(installDir string) error {
 	return nil
 }
 
+func stopSvcInstallService(app svcInstallApp, goos string) error {
+	var err error
+	var missingExitCode int
+	switch goos {
+	case "linux":
+		err = svcInstallRunCommand("systemctl", "--user", "stop", app.SystemdUnit)
+		missingExitCode = 5 // systemctl EXIT_NOTINSTALLED: no such unit
+	case "darwin":
+		target := fmt.Sprintf("gui/%d/%s", os.Getuid(), app.LaunchdLabel)
+		err = svcInstallRunCommand("launchctl", "bootout", "--wait", target)
+		missingExitCode = 3 // launchctl ESRCH: no such process
+	default:
+		return fmt.Errorf("svc-install does not support stopping services on %s", goos)
+	}
+	if err == nil {
+		return nil
+	}
+
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == missingExitCode {
+		fmt.Println("User service is not registered; continuing with installation.")
+		return nil
+	}
+	return fmt.Errorf("failed to stop %s user service: %w", app.Name, err)
+}
+
 func registerSvcInstallService(app svcInstallApp, installDir, goos string) error {
 	switch goos {
 	case "linux":
@@ -633,8 +667,8 @@ func registerSystemdUserService(app svcInstallApp, installDir string) error {
 	if err := svcInstallRunCommand("systemctl", "--user", "enable", app.SystemdUnit); err != nil {
 		return fmt.Errorf("failed to enable systemd user service %s: %w", app.SystemdUnit, err)
 	}
-	if err := svcInstallRunCommand("systemctl", "--user", "restart", app.SystemdUnit); err != nil {
-		return fmt.Errorf("failed to restart systemd user service %s: %w", app.SystemdUnit, err)
+	if err := svcInstallRunCommand("systemctl", "--user", "start", app.SystemdUnit); err != nil {
+		return fmt.Errorf("failed to start systemd user service %s: %w", app.SystemdUnit, err)
 	}
 
 	fmt.Printf("Wrote systemd user service: %s\n", unitPath)
@@ -688,7 +722,6 @@ func registerLaunchdAgent(app svcInstallApp, installDir string) error {
 
 	domain := fmt.Sprintf("gui/%d", os.Getuid())
 	serviceTarget := domain + "/" + app.LaunchdLabel
-	_ = svcInstallRunCommand("launchctl", "bootout", serviceTarget)
 	if err := svcInstallRunCommand("launchctl", "bootstrap", domain, plistPath); err != nil {
 		return fmt.Errorf("failed to bootstrap launchd agent %s: %w", app.LaunchdLabel, err)
 	}

@@ -1,10 +1,19 @@
 package cmd
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"encoding/xml"
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -214,6 +223,288 @@ func TestFindSvcInstallReleaseRoot(t *testing.T) {
 	})
 }
 
+func TestRunSvcInstallStopsBeforeReplacingFiles(t *testing.T) {
+	for _, appName := range []string{"commander", "host_agent", "secrethub_agent"} {
+		for _, installed := range []bool{false, true} {
+			t.Run(appName+"/installed="+strconv.FormatBool(installed), func(t *testing.T) {
+				t.Setenv("HOME", t.TempDir())
+				app, ok := resolveSvcInstallApp(appName)
+				if !ok {
+					t.Fatalf("unknown service app %q", appName)
+				}
+				installDir := expandPath(app.DefaultDir)
+				binaryPath := filepath.Join(installDir, "bin", app.AppName)
+				oldBinary := "#!/bin/sh\n# old release\n"
+				if installed {
+					createExecutable(t, binaryPath)
+					if err := os.WriteFile(binaryPath, []byte(oldBinary), 0o755); err != nil {
+						t.Fatal(err)
+					}
+				}
+				newBinary := "#!/bin/sh\nprintf '[agent]\\nname = \"installed\"\\n'\n"
+				serveSvcInstallRelease(t, app, newBinary)
+				wantCalls := svcInstallLifecycleCommands(app, runtime.GOOS)
+				var missingService error
+				if !installed {
+					code := 5 // systemctl: unit not installed
+					if runtime.GOOS == "darwin" {
+						code = 3 // launchctl: no such process
+					}
+					missingService = svcInstallExitError(t, code)
+				}
+				var calls []string
+				stopped := false
+				restore := replaceSvcInstallRunCommand(func(name string, args ...string) error {
+					call := strings.Join(append([]string{name}, args...), " ")
+					calls = append(calls, call)
+					data, err := os.ReadFile(binaryPath)
+					if call == wantCalls[0] {
+						if installed && (err != nil || string(data) != oldBinary) {
+							t.Errorf("old binary changed before service stopped: data=%q, err=%v", data, err)
+						}
+						if !installed && !os.IsNotExist(err) {
+							t.Errorf("binary installed before service stopped: err=%v", err)
+						}
+						stopped = true
+						return missingService
+					}
+					if !stopped {
+						t.Errorf("service command %q ran before stopping the service", call)
+					}
+					if err != nil || string(data) != newBinary {
+						t.Errorf("service command %q ran before installation completed: data=%q, err=%v", call, data, err)
+					}
+					if app.Name == "secrethub_agent" {
+						if _, err := os.Stat(filepath.Join(os.Getenv("HOME"), ".config", "secrethub_agent", "config.toml")); err != nil {
+							t.Errorf("service command %q ran before config was generated: %v", call, err)
+						}
+					}
+					return nil
+				})
+				defer restore()
+
+				if err := runSvcInstall(appName); err != nil {
+					t.Fatalf("runSvcInstall returned error: %v", err)
+				}
+				if !reflect.DeepEqual(calls, wantCalls) {
+					t.Fatalf("service commands = %#v, want %#v", calls, wantCalls)
+				}
+				data, err := os.ReadFile(binaryPath)
+				if err != nil || string(data) != newBinary {
+					t.Fatalf("installed binary = %q, err=%v", data, err)
+				}
+			})
+		}
+	}
+}
+
+func TestRunSvcInstallPreservesFilesWhenStopFails(t *testing.T) {
+	for _, appName := range []string{"commander", "host_agent", "secrethub_agent"} {
+		t.Run(appName, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			app, _ := resolveSvcInstallApp(appName)
+			installDir := expandPath(app.DefaultDir)
+			binaryPath := filepath.Join(installDir, "bin", app.AppName)
+			createExecutable(t, binaryPath)
+			oldBinary, err := os.ReadFile(binaryPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			serveSvcInstallRelease(t, app, "#!/bin/sh\n# new release\n")
+			stopErr := errors.New("service stop failed")
+			var calls []string
+			restore := replaceSvcInstallRunCommand(func(name string, args ...string) error {
+				calls = append(calls, strings.Join(append([]string{name}, args...), " "))
+				return stopErr
+			})
+			defer restore()
+
+			if err := runSvcInstall(appName); !errors.Is(err, stopErr) {
+				t.Fatalf("runSvcInstall error = %v, want %v", err, stopErr)
+			}
+			data, err := os.ReadFile(binaryPath)
+			if err != nil || !bytes.Equal(data, oldBinary) {
+				t.Errorf("old binary changed after stop failed: data=%q, err=%v", data, err)
+			}
+			wantCalls := svcInstallLifecycleCommands(app, runtime.GOOS)[:1]
+			if !reflect.DeepEqual(calls, wantCalls) {
+				t.Errorf("service commands = %#v, want %#v", calls, wantCalls)
+			}
+		})
+	}
+}
+
+func TestRunSvcInstallDoesNotStartAfterInstallationFailure(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		appName string
+		binary  string
+		wantErr string
+	}{
+		{name: "file installation", appName: "host_agent", binary: "#!/bin/sh\n", wantErr: "failed to install release"},
+		{name: "config generation", appName: "secrethub_agent", binary: "#!/bin/sh\nexit 1\n", wantErr: "failed to generate secrethub_agent config"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			if tt.appName == "host_agent" {
+				if err := os.WriteFile(filepath.Join(home, ".local"), []byte("blocks installation directory"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			app, _ := resolveSvcInstallApp(tt.appName)
+			serveSvcInstallRelease(t, app, tt.binary)
+			var calls []string
+			restore := replaceSvcInstallRunCommand(func(name string, args ...string) error {
+				calls = append(calls, strings.Join(append([]string{name}, args...), " "))
+				return nil
+			})
+			defer restore()
+
+			if err := runSvcInstall(tt.appName); err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("runSvcInstall error = %v, want %q", err, tt.wantErr)
+			}
+			wantCalls := svcInstallLifecycleCommands(app, runtime.GOOS)[:1]
+			if !reflect.DeepEqual(calls, wantCalls) {
+				t.Fatalf("service commands = %#v, want %#v", calls, wantCalls)
+			}
+		})
+	}
+}
+
+func TestStopSvcInstallService(t *testing.T) {
+	for _, goos := range []string{"linux", "darwin"} {
+		missingCode, otherCode := 5, 3
+		if goos == "darwin" {
+			missingCode, otherCode = 3, 5
+		}
+		for _, tt := range []struct {
+			name    string
+			err     error
+			wantErr bool
+		}{
+			{name: "stopped"},
+			{name: "not installed", err: svcInstallExitError(t, missingCode)},
+			{name: "stop failed", err: svcInstallExitError(t, 1), wantErr: true},
+			{name: "other platform missing code", err: svcInstallExitError(t, otherCode), wantErr: true},
+			{name: "command unavailable", err: exec.ErrNotFound, wantErr: true},
+		} {
+			for _, appName := range []string{"commander", "host_agent", "secrethub_agent"} {
+				t.Run(goos+"/"+tt.name+"/"+appName, func(t *testing.T) {
+					app, _ := resolveSvcInstallApp(appName)
+					var calls []string
+					restore := replaceSvcInstallRunCommand(func(name string, args ...string) error {
+						calls = append(calls, strings.Join(append([]string{name}, args...), " "))
+						return tt.err
+					})
+					defer restore()
+
+					err := stopSvcInstallService(app, goos)
+					if tt.wantErr {
+						if !errors.Is(err, tt.err) {
+							t.Errorf("stopSvcInstallService error = %v, want %v", err, tt.err)
+						}
+					} else if err != nil {
+						t.Errorf("stopSvcInstallService returned error: %v", err)
+					}
+					wantCalls := svcInstallLifecycleCommands(app, goos)[:1]
+					if !reflect.DeepEqual(calls, wantCalls) {
+						t.Errorf("service commands = %#v, want %#v", calls, wantCalls)
+					}
+				})
+			}
+		}
+	}
+}
+
+func serveSvcInstallRelease(t *testing.T, app svcInstallApp, binary string) {
+	t.Helper()
+	assetNames := app.AssetNames("v1.2.3", runtime.GOOS, runtime.GOARCH)
+	if len(assetNames) == 0 {
+		t.Skip("service installation is unsupported on this platform")
+	}
+	t.Setenv("GITHUB_TOKEN", "")
+	var archive bytes.Buffer
+	gz := gzip.NewWriter(&archive)
+	tw := tar.NewWriter(gz)
+	if err := tw.WriteHeader(&tar.Header{Name: "bin/" + app.AppName, Mode: 0o755, Size: int64(len(binary))}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tw.Write([]byte(binary)); err != nil {
+		t.Fatal(err)
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/" + app.Repo + "/releases":
+			releases := []githubRelease{{TagName: "v1.2.3", Assets: []githubAsset{{
+				Name: assetNames[0], BrowserDownloadURL: server.URL + "/release.tar.gz",
+			}}}}
+			if err := json.NewEncoder(w).Encode(releases); err != nil {
+				t.Errorf("encode release: %v", err)
+			}
+		case "/release.tar.gz":
+			if _, err := w.Write(archive.Bytes()); err != nil {
+				t.Errorf("write release archive: %v", err)
+			}
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+	original := http.DefaultClient
+	http.DefaultClient = &http.Client{Transport: svcInstallRoundTripper(func(r *http.Request) (*http.Response, error) {
+		request := r.Clone(r.Context())
+		request.URL.Scheme = "http"
+		request.URL.Host = server.Listener.Addr().String()
+		request.URL.Path = strings.TrimPrefix(request.URL.Path, "/repos")
+		request.Host = request.URL.Host
+		return http.DefaultTransport.RoundTrip(request)
+	})}
+	t.Cleanup(func() { http.DefaultClient = original })
+}
+
+type svcInstallRoundTripper func(*http.Request) (*http.Response, error)
+
+func (f svcInstallRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
+func svcInstallLifecycleCommands(app svcInstallApp, goos string) []string {
+	if goos == "linux" {
+		return []string{
+			"systemctl --user stop " + app.SystemdUnit,
+			"systemctl --user daemon-reload",
+			"systemctl --user enable " + app.SystemdUnit,
+			"systemctl --user start " + app.SystemdUnit,
+		}
+	}
+	domain := "gui/" + strconv.Itoa(os.Getuid())
+	target := domain + "/" + app.LaunchdLabel
+	return []string{
+		"launchctl bootout --wait " + target,
+		"launchctl bootstrap " + domain + " " + filepath.Join(os.Getenv("HOME"), "Library", "LaunchAgents", app.LaunchdLabel+".plist"),
+		"launchctl enable " + target,
+		"launchctl kickstart -k " + target,
+	}
+}
+
+func svcInstallExitError(t *testing.T, code int) error {
+	t.Helper()
+	err := exec.Command("sh", "-c", "exit "+strconv.Itoa(code)).Run()
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != code {
+		t.Fatalf("expected exit code %d, got %v", code, err)
+	}
+	return err
+}
+
 func TestEnsureSecretHubAgentConfigGeneratesConfig(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -409,7 +700,7 @@ func TestRegisterSystemdUserServiceRunsUserSystemctlCommands(t *testing.T) {
 	want := []string{
 		"systemctl --user daemon-reload",
 		"systemctl --user enable gsmlg-commander.service",
-		"systemctl --user restart gsmlg-commander.service",
+		"systemctl --user start gsmlg-commander.service",
 	}
 	if !reflect.DeepEqual(calls, want) {
 		t.Fatalf("systemctl calls = %#v, want %#v", calls, want)
@@ -541,7 +832,6 @@ func TestRegisterLaunchdAgentRunsLaunchctlCommands(t *testing.T) {
 	plistPath := filepath.Join(home, "Library", "LaunchAgents", "com.gsmlg.host_agent.plist")
 	serviceTarget := "gui/" + strconv.Itoa(os.Getuid()) + "/com.gsmlg.host_agent"
 	want := []string{
-		"launchctl bootout " + serviceTarget,
 		"launchctl bootstrap gui/" + strconv.Itoa(os.Getuid()) + " " + plistPath,
 		"launchctl enable " + serviceTarget,
 		"launchctl kickstart -k " + serviceTarget,
